@@ -15,6 +15,8 @@
 #include "llvm/Pass.h"
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/Analysis/LoopInfo.h"
+#include "llvm/Analysis/LoopPass.h"
 
 #include <string>
 
@@ -39,7 +41,7 @@ public:
         outs() << "Found GEP:\n";
         // These dumps only work with LLVM built with a special cmake flag
         // enabling dumps.
-        // GEP->dump();
+        GEP->dump();
         outs() << "  The type is: " << ToString(GEP->getType()) << "\n";
         outs() << "  The pointer operand is: "
                << ToString(GEP->getPointerOperand()) << "\n";
@@ -64,6 +66,33 @@ public:
 
 char AnalyzeGEPPass::ID = 0;
 
+class LoopAnalyzePass : public LoopPass {
+public:
+  LoopAnalyzePass() : LoopPass(ID) {}
+
+  void getAnalysisUsage(AnalysisUsage &AU) const override {
+  	AU.setPreservesAll();
+    AU.addRequired<LoopInfoWrapperPass>();
+  }
+
+  virtual bool runOnLoop(Loop *loop, LPPassManager &LPM) override {
+    outs() << "Found loop:\n";
+    loop->dump();
+    outs() << "\n";
+    // Return false to signal that the basic block was not modified by this
+    // pass.
+    return false;
+  }
+
+  StringRef getPassName() const override { return "Do stuff with Loop IR"; }
+
+  // The address of this member is used to uniquely identify the class. This is
+  // used by LLVM's own RTTI mechanism.
+  static char ID;
+};
+
+char LoopAnalyzePass::ID = 1;
+
 int main(int argc, char **argv) {
   if (argc < 2) {
     errs() << "Usage: " << argv[0] << " <IR file>\n";
@@ -82,6 +111,9 @@ int main(int argc, char **argv) {
   // Create a pass manager and fill it with the passes we want to run.
   legacy::PassManager PM;
   PM.add(new AnalyzeGEPPass());
+  PM.add(new LoopInfoWrapperPass());
+  PM.add(new LCSSAVerificationPass());
+  PM.add(new LoopAnalyzePass());
   PM.run(*Mod);
 
   return 0;
