@@ -70,6 +70,8 @@ else()
 endif()
 
 target_link_libraries(${PROJECT_NAME}
+  ${LLVM_TERMCAP_LIBRARY})
+target_link_libraries(${PROJECT_NAME}
   LLVMTransformUtils
   LLVMAnalysis
   LLVMTarget
@@ -82,7 +84,6 @@ target_link_libraries(${PROJECT_NAME}
   LLVMDemangle
   LLVMBitReader
   LLVMBinaryFormat
-  ${LLVM_TERMCAP_LIBRARY}
 )
 
 message(STATUS "    = ${llvm_libs}")
